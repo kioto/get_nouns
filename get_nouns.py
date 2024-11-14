@@ -54,7 +54,8 @@ def get_nouns_from_text_file(filename, tokenizer):
 def get_nouns_from_excel_file(filename, tokenizer):
     """Excelファイルから名詞一覧を返す
     """
-    return set()
+    nown_map = {}
+    return nown_map
 
 
 def main(filename):
