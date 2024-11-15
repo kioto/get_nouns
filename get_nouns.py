@@ -7,7 +7,8 @@ from janome.tokenizer import Tokenizer
 import openpyxl
 
 
-DICT_CSV = './user_dict.csv'    # ユーザー辞書
+USER_DICT_CSV = './user_dict.csv'  # ユーザー辞書
+DST_DICT_CSV = '/tmp/_dict.csv'    # 中間辞書ファイル
 POS1_TYPE = ['一般', '固有名詞', '*']
 
 
@@ -88,7 +89,7 @@ def get_nouns_from_excel_file(filename, tokenizer):
     return noun_map
 
 
-def main(filename):
+def main(filename, dict_file):
     in_file = Path(filename)
     if not in_file.exists():
         print(f'{in_file}: No such file or directory')
@@ -96,8 +97,8 @@ def main(filename):
 
     # トーカナイザー生成
     tokenizer = None
-    if Path(DICT_CSV).exists():
-        tokenizer = Tokenizer(DICT_CSV,
+    if Path(dict_file).exists():
+        tokenizer = Tokenizer(dict_file,
                               udic_type='simpledic', udic_enc='utf8')
     else:
         tokenizer = Tokenizer()
@@ -121,9 +122,61 @@ def main(filename):
         print(msg)
 
 
+def make_dict_file(dict_files, dst_dict_file):
+    """辞書ファイルの作成
+    dict_filesのファイルから注釈行を削除し、dst_dict_fileに書き込む。
+    """
+    with open(dst_dict_file, 'w') as fout:
+        for dict_file in dict_files:
+            if not Path(dict_file).exists():
+                print(f'ERROR: {dict_file}: No such file or directory')
+                exit()
+
+            with open(dict_file) as fin:
+                for line in fin.readlines():
+                    if re.match(r'^#', line):
+                        # 注釈行をスキップ
+                        continue
+                    fout.write(line)
+
+
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print(f'Usage: python {sys.argv[0]} <text-file> | <excel-file>')
+    if len(sys.argv) == 1:
+        print(f'Usage: python {sys.argv[0]} '
+              '[-d <dict-file>] <text-file> | <excel-file>')
         exit()
 
-    main(sys.argv[1])
+    # option
+    filename = ''
+    is_dict_opt = False
+    dict_files = []
+    for arg in sys.argv[1:]:
+        if is_dict_opt:
+            is_dict_opt = False
+            dict_files.append(arg)
+        else:
+            if arg == '-d':
+                is_dict_opt = True
+            else:
+                filename = arg
+
+    # 中間辞書ファイルが残っていれば削除
+    if Path(DST_DICT_CSV).exists():
+        Path(DST_DICT_CSV).unlink()
+
+    if Path(USER_DICT_CSV).exists():
+        # ユーザ辞書があれば追加
+        dict_files.append(USER_DICT_CSV)
+
+    # 辞書を中間辞書ファイルに集約
+    if dict_files:
+        make_dict_file(dict_files, DST_DICT_CSV)
+
+    # メインルーチン
+    main(filename, DST_DICT_CSV)
+
+    # 中間辞書ファイルを削除
+    if Path(DST_DICT_CSV).exists():
+        Path(DST_DICT_CSV).unlink()
+
+    print('done')
