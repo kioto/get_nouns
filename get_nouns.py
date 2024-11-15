@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 from janome.tokenizer import Tokenizer
+import openpyxl
 
 
 DICT_CSV = './user_dict.csv'    # ユーザー辞書
@@ -38,6 +39,14 @@ def is_excel_file(filepath):
     return filepath.suffix.lower() == '.xlsx'
 
 
+def entry_nouns(noun_map, tokens):
+    """トークンリストから名詞トークンを名詞mapに登録する
+    """
+    for token in tokens:
+        if is_noun(token) and token.surface not in noun_map:
+            noun_map[token.surface] = token
+
+
 def get_nouns_from_text_file(filename, tokenizer):
     """テキストファイルから名詞一覧を返す
     """
@@ -51,11 +60,33 @@ def get_nouns_from_text_file(filename, tokenizer):
     return noun_map
 
 
+def get_cell_texts(sheet):
+    """シートからセルのテキストリストを取り出す
+    """
+    texts = []
+    for row in [sheet[i] for i in range(1, sheet.max_row+1)]:
+        # 行単位で取り出し
+        for cell in row:
+            # セル単位で取り出し
+            if cell.value is not None and isinstance(cell.value, str):
+                texts.append(cell.value)
+    return texts
+
+
 def get_nouns_from_excel_file(filename, tokenizer):
     """Excelファイルから名詞一覧を返す
     """
-    nown_map = {}
-    return nown_map
+    noun_map = {}
+    wb = openpyxl.load_workbook(filename)
+    for sheet_name in wb.sheetnames:
+        # シート名も対象
+        entry_nouns(noun_map, tokenizer.tokenize(sheet_name))
+
+        # シートの内容
+        for cell_text in get_cell_texts(wb[sheet_name]):
+            entry_nouns(noun_map, tokenizer.tokenize(cell_text))
+
+    return noun_map
 
 
 def main(filename):
