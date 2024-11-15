@@ -1,6 +1,7 @@
 """文書ファイル（テキスト、Excel）から名詞一覧を表示
 """
 import sys
+import re
 from pathlib import Path
 from janome.tokenizer import Tokenizer
 import openpyxl
@@ -110,7 +111,14 @@ def main(filename):
 
     # 名詞一覧を表示
     for token in noun_map.values():
-        print(token)
+        # XXX	名詞,固有名詞,地域,一般,*,*,XXX,YYY,YYY
+        # とある場合、
+        # XXX	名詞,固有名詞,地域,一般
+        # のみを表示する
+        msg = re.sub(r'^(.+\t)([^,]+),([^,]+),([^,]+),([^,]+),(.*$)',
+                     r'\1\2,\3,\4,\5', str(token))
+
+        print(msg)
 
 
 if __name__ == '__main__':
