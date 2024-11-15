@@ -178,5 +178,3 @@ if __name__ == '__main__':
     # 中間辞書ファイルを削除
     if Path(DST_DICT_CSV).exists():
         Path(DST_DICT_CSV).unlink()
-
-    print('done')
