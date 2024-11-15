@@ -53,9 +53,7 @@ def get_nouns_from_text_file(filename, tokenizer):
     noun_map = {}
     with open(filename) as f:
         for line in f.readlines():
-            for token in tokenizer.tokenize(line):
-                if is_noun(token) and token.surface not in noun_map:
-                    noun_map[token.surface] = token
+            entry_nouns(noun_map, tokenizer.tokenize(line))
 
     return noun_map
 
